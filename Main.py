@@ -11,6 +11,10 @@ PRIORITY_ORDER = {
 }
 
 
+# =========================
+# LOAD AND SAVE
+# =========================
+
 def load_tasks():
     if not DATA_FILE.exists():
         return []
@@ -45,6 +49,10 @@ def save_tasks():
 tasks = load_tasks()
 
 
+# =========================
+# DATE FUNCTIONS
+# =========================
+
 def parse_date(date_text):
     if not date_text or date_text == "No date":
         return None
@@ -73,6 +81,10 @@ def is_overdue(task):
     return due_date < date.today()
 
 
+# =========================
+# SHOW TASKS
+# =========================
+
 def show_tasks(task_list=None):
     if task_list is None:
         task_list = tasks
@@ -97,6 +109,11 @@ def show_tasks(task_list=None):
             "Medium"
         )
 
+        category = task.get(
+            "category",
+            "General"
+        )
+
         due_date = task.get(
             "due_date",
             "No date"
@@ -111,10 +128,15 @@ def show_tasks(task_list=None):
             f"{index}. [{status}] "
             f"{task['name']} "
             f"| Priority: {priority} "
+            f"| Category: {category} "
             f"| Due: {due_date}"
             f"{overdue}"
         )
 
+
+# =========================
+# PRIORITY
+# =========================
 
 def choose_priority(current=None):
     print("\nChoose the priority:")
@@ -146,6 +168,47 @@ def choose_priority(current=None):
         current or "Medium"
     )
 
+
+# =========================
+# CATEGORY
+# =========================
+
+def choose_category(current=None):
+    print("\nChoose the category:")
+    print("1 - Work")
+    print("2 - Study")
+    print("3 - Personal")
+    print("4 - Other")
+
+    if current:
+        option = input(
+            f"Category [{current}]: "
+        ).strip()
+
+        if not option:
+            return current
+
+    else:
+        option = input(
+            "Category: "
+        ).strip()
+
+    categories = {
+        "1": "Work",
+        "2": "Study",
+        "3": "Personal",
+        "4": "Other"
+    }
+
+    return categories.get(
+        option,
+        current or "Other"
+    )
+
+
+# =========================
+# DUE DATE
+# =========================
 
 def get_due_date():
     while True:
@@ -205,6 +268,10 @@ def edit_due_date(current):
             )
 
 
+# =========================
+# ADD TASK
+# =========================
+
 def add_task():
     task_name = input(
         "\nEnter the task name: "
@@ -217,12 +284,16 @@ def add_task():
         return
 
     priority = choose_priority()
+
+    category = choose_category()
+
     due_date = get_due_date()
 
     tasks.append({
         "name": task_name,
         "completed": False,
         "priority": priority,
+        "category": category,
         "due_date": due_date
     })
 
@@ -232,6 +303,10 @@ def add_task():
         "\nTask added successfully!"
     )
 
+
+# =========================
+# COMPLETE TASK
+# =========================
 
 def complete_task():
     show_tasks()
@@ -265,6 +340,10 @@ def complete_task():
     except (ValueError, IndexError):
         print("Invalid task number.")
 
+
+# =========================
+# EDIT TASK
+# =========================
 
 def edit_task():
     show_tasks()
@@ -307,6 +386,13 @@ def edit_task():
             )
         )
 
+        task["category"] = choose_category(
+            task.get(
+                "category",
+                "General"
+            )
+        )
+
         task["due_date"] = edit_due_date(
             task.get(
                 "due_date",
@@ -323,6 +409,10 @@ def edit_task():
     except (ValueError, IndexError):
         print("Invalid task number.")
 
+
+# =========================
+# DELETE TASK
+# =========================
 
 def delete_task():
     show_tasks()
@@ -357,6 +447,10 @@ def delete_task():
         print("Invalid task number.")
 
 
+# =========================
+# HIGH PRIORITY
+# =========================
+
 def show_high_priority_tasks():
     high_priority = [
         task
@@ -376,8 +470,16 @@ def show_high_priority_tasks():
         )
         return
 
+    print(
+        "\n===== HIGH PRIORITY ====="
+    )
+
     show_tasks(high_priority)
 
+
+# =========================
+# OVERDUE TASKS
+# =========================
 
 def show_overdue_tasks():
     overdue_tasks = [
@@ -398,6 +500,10 @@ def show_overdue_tasks():
 
     show_tasks(overdue_tasks)
 
+
+# =========================
+# SORT TASKS
+# =========================
 
 def sort_tasks():
     tasks.sort(
@@ -425,6 +531,132 @@ def sort_tasks():
     show_tasks()
 
 
+# =========================
+# SEARCH
+# =========================
+
+def search_tasks():
+    if not tasks:
+        print("\nNo tasks found.")
+        return
+
+    search_term = input(
+        "\nSearch task: "
+    ).strip().lower()
+
+    if not search_term:
+        print(
+            "Search cannot be empty."
+        )
+        return
+
+    results = [
+        task
+        for task in tasks
+        if search_term in task.get(
+            "name",
+            ""
+        ).lower()
+        or search_term in task.get(
+            "category",
+            ""
+        ).lower()
+    ]
+
+    if not results:
+        print(
+            "\nNo matching tasks found."
+        )
+        return
+
+    print(
+        f"\nFound {len(results)} task(s):"
+    )
+
+    show_tasks(results)
+
+
+# =========================
+# STATISTICS
+# =========================
+
+def show_statistics():
+    total = len(tasks)
+
+    if total == 0:
+        print(
+            "\nNo tasks available."
+        )
+        return
+
+    completed = sum(
+        1
+        for task in tasks
+        if task.get(
+            "completed",
+            False
+        )
+    )
+
+    pending = total - completed
+
+    overdue = sum(
+        1
+        for task in tasks
+        if is_overdue(task)
+    )
+
+    high_priority = sum(
+        1
+        for task in tasks
+        if task.get(
+            "priority"
+        ) == "High"
+        and not task.get(
+            "completed",
+            False
+        )
+    )
+
+    completion_rate = (
+        completed / total
+    ) * 100
+
+    print(
+        "\n===== STATISTICS ====="
+    )
+
+    print(
+        f"Total tasks: {total}"
+    )
+
+    print(
+        f"Completed: {completed}"
+    )
+
+    print(
+        f"Pending: {pending}"
+    )
+
+    print(
+        f"Overdue: {overdue}"
+    )
+
+    print(
+        f"High priority pending: "
+        f"{high_priority}"
+    )
+
+    print(
+        f"Completion rate: "
+        f"{completion_rate:.1f}%"
+    )
+
+
+# =========================
+# MAIN MENU
+# =========================
+
 def main():
 
     while True:
@@ -432,9 +664,11 @@ def main():
         print(
             "\n=========================="
         )
+
         print(
             "       TASK MANAGER"
         )
+
         print(
             "=========================="
         )
@@ -444,16 +678,30 @@ def main():
         print("3 - Complete task")
         print("4 - Edit task")
         print("5 - Delete task")
+
         print(
             "6 - Show high priority tasks"
         )
+
         print(
             "7 - Show overdue tasks"
         )
+
         print(
             "8 - Sort tasks by priority"
         )
-        print("9 - Exit")
+
+        print(
+            "9 - Search tasks"
+        )
+
+        print(
+            "10 - Statistics"
+        )
+
+        print(
+            "11 - Exit"
+        )
 
         option = input(
             "\nChoose an option: "
@@ -484,7 +732,15 @@ def main():
             sort_tasks()
 
         elif option == "9":
-            print("\nGoodbye!")
+            search_tasks()
+
+        elif option == "10":
+            show_statistics()
+
+        elif option == "11":
+            print(
+                "\nGoodbye!"
+            )
             break
 
         else:
@@ -495,3 +751,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+               
