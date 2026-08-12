@@ -1,11 +1,11 @@
 import json
 from pathlib import Path
+from datetime import datetime
 
 DATA_FILE = Path("tasks.json")
 
 
 def load_tasks():
-    """Load saved tasks from the JSON file."""
     if not DATA_FILE.exists():
         return []
 
@@ -23,7 +23,6 @@ def load_tasks():
 
 
 def save_tasks():
-    """Save all tasks to the JSON file."""
     try:
         with DATA_FILE.open("w", encoding="utf-8") as file:
             json.dump(tasks, file, indent=4, ensure_ascii=False)
@@ -40,11 +39,53 @@ def show_tasks():
         print("\nNo tasks found.")
         return
 
-    print("\n===== TASKS =====")
+    print("\n========== TASKS ==========")
 
     for index, task in enumerate(tasks, start=1):
-        status = "✓" if task["completed"] else " "
-        print(f"{index}. [{status}] {task['name']}")
+        status = "✓" if task.get("completed", False) else " "
+
+        priority = task.get("priority", "Medium")
+        due_date = task.get("due_date", "No date")
+
+        print(
+            f"{index}. [{status}] {task['name']} "
+            f"| Priority: {priority} "
+            f"| Due: {due_date}"
+        )
+
+
+def choose_priority():
+    print("\nChoose the priority:")
+    print("1 - Low")
+    print("2 - Medium")
+    print("3 - High")
+
+    option = input("Priority: ").strip()
+
+    priorities = {
+        "1": "Low",
+        "2": "Medium",
+        "3": "High"
+    }
+
+    return priorities.get(option, "Medium")
+
+
+def get_due_date():
+    while True:
+        due_date = input(
+            "Due date (DD/MM/YYYY) or press Enter for no date: "
+        ).strip()
+
+        if not due_date:
+            return "No date"
+
+        try:
+            datetime.strptime(due_date, "%d/%m/%Y")
+            return due_date
+
+        except ValueError:
+            print("Invalid date. Use DD/MM/YYYY.")
 
 
 def add_task():
@@ -54,14 +95,19 @@ def add_task():
         print("Task name cannot be empty.")
         return
 
+    priority = choose_priority()
+    due_date = get_due_date()
+
     tasks.append({
         "name": task_name,
-        "completed": False
+        "completed": False,
+        "priority": priority,
+        "due_date": due_date
     })
 
     save_tasks()
 
-    print("Task added successfully!")
+    print("\nTask added successfully!")
 
 
 def complete_task():
@@ -112,8 +158,29 @@ def delete_task():
         print("Invalid task number.")
 
 
-def main():
+def show_high_priority_tasks():
+    high_priority_tasks = [
+        task for task in tasks
+        if task.get("priority") == "High"
+        and not task.get("completed", False)
+    ]
 
+    if not high_priority_tasks:
+        print("\nNo pending high priority tasks.")
+        return
+
+    print("\n===== HIGH PRIORITY =====")
+
+    for task in high_priority_tasks:
+        due_date = task.get("due_date", "No date")
+
+        print(
+            f"- {task['name']} "
+            f"| Due: {due_date}"
+        )
+
+
+def main():
     while True:
 
         print("\n========================")
@@ -124,7 +191,8 @@ def main():
         print("2 - Show tasks")
         print("3 - Complete task")
         print("4 - Delete task")
-        print("5 - Exit")
+        print("5 - Show high priority tasks")
+        print("6 - Exit")
 
         option = input("\nChoose an option: ").strip()
 
@@ -141,6 +209,9 @@ def main():
             delete_task()
 
         elif option == "5":
+            show_high_priority_tasks()
+
+        elif option == "6":
             print("\nGoodbye!")
             break
 
